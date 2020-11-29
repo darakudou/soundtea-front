@@ -1,0 +1,137 @@
+<template>
+  <div class="playList">
+    <h1>PlayList</h1>
+    <button @click="spotifyLogin">認証</button>
+    <button @click="getPlayLists">プレイリストの取得</button>
+    <!-- 取得したプレイリストはselect boxに溜め込みたい-->
+    <!-- プレイリストで各楽曲取得APIを叩いて取得した情報をchart.jsで表示する-->
+    <select  @change="getTracks()" v-model="name">
+    <option disabled value="">-----</option>
+    <option v-for="(p, key) in playLists" :key="key">{{ p.name }}</option>
+    </select>
+    <p>{{ trackInfos }}</p>
+  </div>
+</template>
+
+<script>
+import axios from 'axios'
+// import chart from '../components/Chart.vue'
+
+export default {
+  components: {
+    // chart
+  },
+  data: function() {
+    return {
+        playLists: null,
+        value: null,
+        name: null,
+        tracks: null,
+        track: null,
+        trackInfos: null
+    }
+  },
+  props: {
+    routeParams: Object
+  },
+  created: function() {
+    // 全然分かってない。コピペなので・・・
+    if (this.$route.hash) {
+      this.$router.push(this.$route.fullPath.replace('#', '?'))
+    }
+  },
+  methods: {
+    spotifyLogin: function() {
+      console.log(process.env)
+      let endpoint = 'https://accounts.spotify.com/authorize'
+      let response_type = 'token'
+      let client_id = process.env.VUE_APP_SPOTIFY_CLIENT_KEY 
+      let redirect_uri = 'http://localhost:8080' 
+      let scope = 'playlist-read-private'
+      location.href = endpoint + 
+        '?response_type=' + response_type +
+        '&client_id=' + client_id +
+        '&redirect_uri=' + redirect_uri +
+        '&scope=' + scope
+    },
+     getPlayLists: function() {
+      let endpoint = 'https://api.spotify.com/v1/me/playlists'
+      let data = {
+        headers: {
+          'Authorization': this.routeParams.token_type + ' ' + this.routeParams.access_token
+        },
+        data: {}
+      }
+      axios
+      .get(endpoint, data)
+      .then(res => {
+        this.playLists = res.data.items
+      })
+      .catch(err => {
+        console.error(err)
+      })
+    },
+    getTracks: function(){
+      let id = null
+      this.playLists.forEach(element => {
+        if (element.name === this.name)
+        {
+             id = element.id
+        }
+      });
+      // セレクトしたpllaylistのidを取得出来るか？
+      // ここでtrack情報をループで取得する
+      // https://developer.spotify.com/documentation/web-api/reference/playlists/get-playlists-tracks/
+      let endpoint = 'https://api.spotify.com/v1/playlists/' +  id + '/tracks'
+      let data = {
+        headers: {
+          'Authorization': this.routeParams.token_type + ' ' + this.routeParams.access_token
+        },
+        data: {}
+      }
+      axios
+      .get(endpoint, data)
+      .then(res => {
+        // この辺でもう一回APIをループを投げてtrackでapiを投げて結果をリストに保存して、子のcomponent(chart.jsに投げる)
+        this.trackInfos = []
+        res.data.items.forEach(element =>{
+          this.getTrack(element.track.name, element.track.id)
+        })
+        // ここでrenderChartする
+        this.displayGraph() 
+     })
+      .catch(err => {
+        console.error(err)
+      })
+    },
+    // https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/
+    getTrack: function(title, trackId) {
+      let endpoint = 'https://api.spotify.com/v1/audio-features/' +  trackId 
+      let data = {
+        headers: {
+          'Authorization': this.routeParams.token_type + ' ' + this.routeParams.access_token
+        },
+        data: {}
+      }
+      axios
+      .get(endpoint, data)
+      .then(res => {
+          // publicな変数?にとりあえず突っ込む
+          let trackInfo = {title: title}
+          trackInfo.info = res.data
+          this.trackInfos.push(trackInfo)
+       })
+    },
+    displayGraph: function() {
+      // var labels = this.trackInfos.map(value => value.title)
+      let labels = []
+      this.trackInfos.forEach(e =>{
+       console.log(e)
+       labels.push(e.title) 
+      }
+      )
+      console.log(labels)
+        }
+  }
+}
+</script>

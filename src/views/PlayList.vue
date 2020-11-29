@@ -93,6 +93,7 @@ export default {
       .get(endpoint, data)
       .then(res => {
         // この辺でもう一回APIをループを投げてtrackでapiを投げて結果をリストに保存して、子のcomponent(chart.jsに投げる)
+        this.labels = []
         this.trackInfos = []
         res.data.items.forEach(element =>{
           this.getTrack(element.track.name, element.track.id)
@@ -117,21 +118,14 @@ export default {
       .get(endpoint, data)
       .then(res => {
           // publicな変数?にとりあえず突っ込む
+          this.labels.push(title)
           let trackInfo = {title: title}
           trackInfo.info = res.data
           this.trackInfos.push(trackInfo)
        })
     },
     displayGraph: function() {
-      // var labels = this.trackInfos.map(value => value.title)
-      let labels = []
-      this.trackInfos.forEach(e =>{
-       console.log(e)
-       labels.push(e.title) 
-      }
-      )
-      console.log(labels)
-        }
+    }
   }
 }
 </script>

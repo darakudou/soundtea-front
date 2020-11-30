@@ -9,26 +9,35 @@
     <option disabled value="">-----</option>
     <option v-for="(p, key) in playLists" :key="key">{{ p.name }}</option>
     </select>
-    <p>{{ trackInfos }}</p>
+    <p>{{ tempos }}</p>
+    <p>{{ labels }}</p>
+    <div class="small">
+      <chart v-if="loaded" :chartData="datacollection" :options="chartOptions"/>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
-// import chart from '../components/Chart.vue'
+import Chart from '@/components/Chart.vue'
 
 export default {
   components: {
-    // chart
+    Chart
   },
   data: function() {
     return {
+        loaded: false,
+        labels: null,
+        datacollection: {labels:[], dataset:[]},
+        chartOptions: null,
         playLists: null,
         value: null,
         name: null,
         tracks: null,
         track: null,
-        trackInfos: null
+        trackInfos: null,
+        tempos: null
     }
   },
   props: {
@@ -42,7 +51,6 @@ export default {
   },
   methods: {
     spotifyLogin: function() {
-      console.log(process.env)
       let endpoint = 'https://accounts.spotify.com/authorize'
       let response_type = 'token'
       let client_id = process.env.VUE_APP_SPOTIFY_CLIENT_KEY 
@@ -94,13 +102,25 @@ export default {
       .then(res => {
         // この辺でもう一回APIをループを投げてtrackでapiを投げて結果をリストに保存して、子のcomponent(chart.jsに投げる)
         this.labels = []
+        this.tempos = []
         this.trackInfos = []
         res.data.items.forEach(element =>{
           this.getTrack(element.track.name, element.track.id)
         })
         // ここでrenderChartする
-        this.displayGraph() 
-     })
+        this.datacollection["labals"] = this.labels 
+        this.datacollection["dataset"] =  [ 
+            {
+              label: 'tempo',
+              backgroundColor: '#f87979',
+              data: this.tempos
+            },
+        ]
+        this.loaded = true
+        console.log(this.datacollection)
+        console.log(this.datacollection.dataset[0].label)
+          }
+     )
       .catch(err => {
         console.error(err)
       })
@@ -122,10 +142,9 @@ export default {
           let trackInfo = {title: title}
           trackInfo.info = res.data
           this.trackInfos.push(trackInfo)
+          this.tempos.push(res.data.tempo)
        })
     },
-    displayGraph: function() {
-    }
   }
 }
 </script>

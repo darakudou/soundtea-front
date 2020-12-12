@@ -1,18 +1,24 @@
 <template>
   <div class="playList">
     <h1>PlayList</h1>
-    <button @click="spotifyLogin">認証</button>
-    <button @click="getPlayLists">プレイリストの取得</button>
-    <!-- 取得したプレイリストはselect boxに溜め込みたい-->
-    <!-- プレイリストで各楽曲取得APIを叩いて取得した情報をchart.jsで表示する-->
-    <select  @change="getTracks()" v-model="name">
-    <option disabled value="">-----</option>
-    <option v-for="(p, key) in playLists" :key="key">{{ p.name }}</option>
-    </select>
-    <p>{{ tempos }}</p>
-    <p>{{ labels }}</p>
+    <v-btn v-on:click="spotifyLogin">認証</v-btn>
+    <v-btn v-on:click="getPlayLists">プレイリストの取得</v-btn>
+    <v-select
+          :items="playLists"
+          v-model="name"
+          label="play list"
+          item-text="name"
+          item-value="id"
+          return-object
+          dense
+          @input="getTracks"
+        ></v-select>
     <div class="small">
-      <chart v-if="loaded" :chartData="datacollection" :options="chartOptions"/>
+      <chart v-if="loaded" :chartData="datacollection"
+                           :options="chartOptions"
+                           :height=100
+                           :weight=200
+                           ></chart>
     </div>
   </div>
 </template>
@@ -29,14 +35,13 @@ export default {
     return {
         loaded: false,
         labels: null,
-        datacollection: {labels:[], dataset:[]},
+        datacollection: {labels:[], datasets:[]},
         chartOptions: null,
-        playLists: null,
+        playLists: [],
         value: null,
         name: null,
         tracks: null,
         track: null,
-        trackInfos: null,
         tempos: null
     }
   },
@@ -79,72 +84,63 @@ export default {
         console.error(err)
       })
     },
-    getTracks: function(){
-      let id = null
-      this.playLists.forEach(element => {
-        if (element.name === this.name)
-        {
-             id = element.id
-        }
-      });
-      // セレクトしたpllaylistのidを取得出来るか？
-      // ここでtrack情報をループで取得する
+    getTracks: function(selected){
       // https://developer.spotify.com/documentation/web-api/reference/playlists/get-playlists-tracks/
-      let endpoint = 'https://api.spotify.com/v1/playlists/' +  id + '/tracks'
+      let endpoint = 'https://api.spotify.com/v1/playlists/' +  selected.id + '/tracks'
       let data = {
         headers: {
           'Authorization': this.routeParams.token_type + ' ' + this.routeParams.access_token
         },
         data: {}
       }
-      axios
-      .get(endpoint, data)
-      .then(res => {
-        // この辺でもう一回APIをループを投げてtrackでapiを投げて結果をリストに保存して、子のcomponent(chart.jsに投げる)
-        this.labels = []
-        this.tempos = []
-        this.trackInfos = []
-        res.data.items.forEach(element =>{
-          this.getTrack(element.track.name, element.track.id)
-        })
-        // ここでrenderChartする
-        this.datacollection["labals"] = this.labels 
-        this.datacollection["dataset"] =  [ 
-            {
-              label: 'tempo',
-              backgroundColor: '#f87979',
-              data: this.tempos
-            },
-        ]
-        this.loaded = true
-        console.log(this.datacollection)
-        console.log(this.datacollection.dataset[0].label)
+      this.labels = []
+      this.tempos = []
+      axios.get(endpoint, data)
+      .then(res =>{
+        for(const item of res.data.items)
+        {
+        this.getTrack(item.track.name, item.track.id)
+        .then(r =>{
+          this.labels.push(item.track.name)
+          this.tempos.push(r.tempo)
+          })
           }
-     )
-      .catch(err => {
-        console.error(err)
-      })
-    },
+        /*
+        res.data.items.forEach(item =>{
+        this.getTrack(item.track.name, item.track.id)
+        .then(r =>{
+          this.labels.push(item.track.name)
+          this.tempos.push(r.tempo)
+          })
+          })
+          */
+          }
+
+      )
+      // ここでrenderChartする
+      this.datacollection["labels"] = this.labels 
+      this.datacollection["datasets"] =  [ 
+          {
+            label: 'tempo',
+            backgroundColor: '#f87979',
+            data: this.tempos
+          },
+      ]
+      this.loaded = true
+      },
     // https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/
-    getTrack: function(title, trackId) {
+    async getTrack(title, trackId) {
       let endpoint = 'https://api.spotify.com/v1/audio-features/' +  trackId 
-      let data = {
-        headers: {
+      let headers = {
           'Authorization': this.routeParams.token_type + ' ' + this.routeParams.access_token
-        },
-        data: {}
-      }
-      axios
-      .get(endpoint, data)
-      .then(res => {
-          // publicな変数?にとりあえず突っ込む
-          this.labels.push(title)
-          let trackInfo = {title: title}
-          trackInfo.info = res.data
-          this.trackInfos.push(trackInfo)
-          this.tempos.push(res.data.tempo)
-       })
-    },
-  }
+        }
+      console.log("前:" + title)
+      const res = await axios.get(endpoint, {headers:headers})
+      const result = res.data
+      console.log(result)
+      console.log("後:" + title)
+      return result 
+    }
+    }
 }
 </script>

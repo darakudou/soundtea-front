@@ -3,10 +3,11 @@ import { Line, mixins } from 'vue-chartjs'
 const { reactiveProp } = mixins
 
 export default {
+  name: 'chart',
   extends: Line,
   mixins: [reactiveProp],
   props: {
-    chartdata: {
+    chartData: {
       type: Object,
       default: null
     },
@@ -16,10 +17,8 @@ export default {
     }
   },
   mounted () {
-    console.log("ここ?")
-    console.log(this.chartdata)
-    this.renderChart(this.chartdata, this.options)
-    //let data = {labels:["a", "b", "c"],datasets:[{label:"aa", data:[2,1,3]}]}
+    console.log(this.chartData)
+    this.renderChart(this.chartData, this.options)
 
   }
 }

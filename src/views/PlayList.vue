@@ -93,54 +93,40 @@ export default {
         },
         data: {}
       }
-      this.labels = []
       this.tempos = []
-      axios.get(endpoint, data)
-      .then(res =>{
+      const a =  axios.get(endpoint, data)
+      .then(async function(res){
+        let labels = []
+        let tempos = []
+        let datacollection = {labels:[], datasets:[]}
+        // ループ文
         for(const item of res.data.items)
-        {
-        this.getTrack(item.track.name, item.track.id)
-        .then(r =>{
-          this.labels.push(item.track.name)
-          this.tempos.push(r.tempo)
-          })
-          }
-        /*
-        res.data.items.forEach(item =>{
-        this.getTrack(item.track.name, item.track.id)
-        .then(r =>{
-          this.labels.push(item.track.name)
-          this.tempos.push(r.tempo)
-          })
-          })
-          */
-          }
+       { 
+           let endpoint1 = 'https://api.spotify.com/v1/audio-features/' + item.track.id 
+           await axios.get(endpoint1, data)
+           .then(r =>{
+             labels.push(item.track.name)
+             tempos.push(r.data.tempo)
+           })
+        }
+        datacollection["labels"] = labels 
 
-      )
-      // ここでrenderChartする
-      this.datacollection["labels"] = this.labels 
-      this.datacollection["datasets"] =  [ 
+        datacollection["datasets"] =  [ 
           {
             label: 'tempo',
             backgroundColor: '#f87979',
-            data: this.tempos
+            data: tempos
           },
-      ]
-      this.loaded = true
-      },
-    // https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/
-    async getTrack(title, trackId) {
-      let endpoint = 'https://api.spotify.com/v1/audio-features/' +  trackId 
-      let headers = {
-          'Authorization': this.routeParams.token_type + ' ' + this.routeParams.access_token
-        }
-      console.log("前:" + title)
-      const res = await axios.get(endpoint, {headers:headers})
-      const result = res.data
-      console.log(result)
-      console.log("後:" + title)
-      return result 
-    }
-    }
+        ]
+        return datacollection
+      })
+      console.log(a)
+      a.then(res =>{
+        console.log(res)
+        this.datacollection = res
+        this.loaded = true
+      })
+    },
+  }
 }
 </script>

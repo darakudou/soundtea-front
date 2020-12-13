@@ -59,7 +59,7 @@ export default {
       let endpoint = 'https://accounts.spotify.com/authorize'
       let response_type = 'token'
       let client_id = process.env.VUE_APP_SPOTIFY_CLIENT_KEY 
-      let redirect_uri = 'http://localhost:8080' 
+      let redirect_uri = process.env.VUE_APP_REDIRECT_URI 
       let scope = 'playlist-read-private'
       location.href = endpoint + 
         '?response_type=' + response_type +

@@ -120,9 +120,7 @@ export default {
         ]
         return datacollection
       })
-      console.log(a)
       a.then(res =>{
-        console.log(res)
         this.datacollection = res
         this.loaded = true
       })

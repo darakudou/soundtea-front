@@ -15,7 +15,7 @@
         ></v-select>
     <div class="small">
       <chart v-if="loaded" :chartData="datacollection"
-                           :options="chartOptions"
+                           :options="options"
                            :height=100
                            :weight=200
                            ></chart>
@@ -34,15 +34,15 @@ export default {
   data: function() {
     return {
         loaded: false,
-        labels: null,
+        labels: [],
         datacollection: {labels:[], datasets:[]},
-        chartOptions: null,
+        options: null,
         playLists: [],
         value: null,
         name: null,
         tracks: null,
         track: null,
-        tempos: null
+        tempos: [] 
     }
   },
   props: {
@@ -93,36 +93,47 @@ export default {
         },
         data: {}
       }
-      this.tempos = []
-      const a =  axios.get(endpoint, data)
+      axios.get(endpoint, data)
       .then(async function(res){
-        let labels = []
         let tempos = []
+        let labels = []
         let datacollection = {labels:[], datasets:[]}
         // ループ文
+        var promises = [];
         for(const item of res.data.items)
-       { 
-           let endpoint1 = 'https://api.spotify.com/v1/audio-features/' + item.track.id 
-           await axios.get(endpoint1, data)
-           .then(r =>{
-             labels.push(item.track.name)
-             tempos.push(r.data.tempo)
-           })
+        {
+          labels.push(item.track.name)
+          let endpoint1 = 'https://api.spotify.com/v1/audio-features/' + item.track.id 
+          const a  = axios.get(endpoint1, data)
+         promises.push(a) 
         }
+        Promise.all(promises)
+        .then((values)=> {
+          values.forEach(v =>{
+            tempos.push(v.data.tempo)
+          })
+        })
         datacollection["labels"] = labels 
 
         datacollection["datasets"] =  [ 
           {
             label: 'tempo',
-            backgroundColor: '#f87979',
-            data: tempos
+            data: tempos,
+            fill: false,
+            borderColor: '#dc143c',
+            lineTension: 0, // 点と点の繋ぎ方、0で直線になる
           },
         ]
         return datacollection
       })
-      a.then(res =>{
-        this.datacollection = res
+      .then(res => {
+        this.options = {
+          'responsive': true ,
+          'borderCapStyle': 'round',
+        }
+        this.datacollection = res 
         this.loaded = true
+
       })
     },
   }

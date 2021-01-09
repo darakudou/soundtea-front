@@ -1,24 +1,36 @@
 <template>
   <div class="playList">
-    <h1>PlayList</h1>
-    <v-btn v-on:click="spotifyLogin">認証</v-btn>
-    <v-btn v-on:click="getPlayLists">プレイリストの取得</v-btn>
-    <v-select
-          :items="playLists"
-          v-model="name"
-          label="play list"
-          item-text="name"
-          item-value="id"
-          return-object
-          dense
-          @input="getTracks"
-        ></v-select>
-    <div class="small">
-      <chart v-if="loaded" :chartData="datacollection"
-                           :options="options"
-                           :height=100
-                           :weight=200
-                           ></chart>
+    <h1>Spotifyプレイリストチェッカー</h1>
+    <div v-if="authorization === null">
+      <v-btn class="white--text"
+      elevation="2"
+      color="green lighten-1"
+      rounded
+       v-on:click="spotifyLogin">log in with spotify</v-btn>
+    </div>
+    <div v-if="authorization">
+      <v-btn class="white--text"
+      elevation="2"
+      color="green lighten-1"
+      rounded
+      v-on:click="getPlayLists">プレイリストを取得する</v-btn>
+      <v-select
+            :items="playLists"
+            v-model="name"
+            label="play list"
+            item-text="name"
+            item-value="id"
+            return-object
+            dense
+            @input="getTracks"
+          ></v-select>
+      <div class="small">
+        <chart v-if="loaded" :chartData="datacollection"
+                            :options="options"
+                            :height=100
+                            :weight=200
+                            ></chart>
+     </div>
     </div>
   </div>
 </template>
@@ -42,6 +54,7 @@ export default {
         name: null,
         tracks: null,
         track: null,
+        authorization: null,
         tempos: [] 
     }
   },
@@ -49,9 +62,14 @@ export default {
     routeParams: Object
   },
   created: function() {
-    // 全然分かってない。コピペなので・・・
+    // ここが最初に動く処理らしい 
     if (this.$route.hash) {
       this.$router.push(this.$route.fullPath.replace('#', '?'))
+      // 文字列をaccess_tokenとtoken_typeに分ける
+      this.authorization =  this.$route.query.token_type + ' ' + this.$route.query.access_token
+      console.log(this.authorization)
+      this.$router.replace('/')
+      this.getPlayLists
     }
   },
   methods: {
@@ -66,12 +84,13 @@ export default {
         '&client_id=' + client_id +
         '&redirect_uri=' + redirect_uri +
         '&scope=' + scope
+      this.authorization =  this.routeParams.token_type + ' ' + this.routeParams.access_token
     },
      getPlayLists: function() {
       let endpoint = 'https://api.spotify.com/v1/me/playlists'
       let data = {
         headers: {
-          'Authorization': this.routeParams.token_type + ' ' + this.routeParams.access_token
+          'Authorization': this.authorization
         },
         data: {}
       }
@@ -89,7 +108,7 @@ export default {
       let endpoint = 'https://api.spotify.com/v1/playlists/' +  selected.id + '/tracks'
       let data = {
         headers: {
-          'Authorization': this.routeParams.token_type + ' ' + this.routeParams.access_token
+          'Authorization': this.authorization 
         },
         data: {}
       }
@@ -114,7 +133,6 @@ export default {
           })
         })
         datacollection["labels"] = labels 
-
         datacollection["datasets"] =  [ 
           {
             label: 'tempo',

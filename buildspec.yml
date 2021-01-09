@@ -1,0 +1,27 @@
+version: 0.2
+# GitHub -> CodeBuild -> S3 -> CloudFront
+phases:
+  install:
+    commands:
+     - echo Nothing to do in the install phase...
+  pre_build:
+    commands:
+      - echo Nothing to do in the pre_build phase...
+  build:
+    commands:
+      - echo Build started on `date`
+      - npm -v
+      - node -v
+      - npm install -g yarn
+      - yarn --version
+      - yarn build
+      - echo build completed
+  post_build:
+    commands:
+      - echo Delete S3 Bucket object...
+      - aws s3 rm s3://${S3_BUCKET_NAME} --recursive
+artifacts:
+  files:
+    - '**/*'
+  # dist配下をデプロイファイルとしてリリースする
+  base-directory: 'dist'

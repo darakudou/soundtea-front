@@ -19,7 +19,7 @@ phases:
   post_build:
     commands:
       - echo Delete S3 Bucket object...
-      - aws s3 rm s3://${S3_BUCKET_NAME} --recursive
+      - aws s3 rm s3://sound-tea --recursive
 artifacts:
   files:
     - '**/*'

@@ -1,5 +1,5 @@
 version: 0.2
-# GitHub -> CodeBuild -> S3 -> CloudFront
+# GitHub -> CodeBuild -> S3
 phases:
   install:
     commands:
@@ -14,7 +14,7 @@ phases:
       - node -v
       - npm install -g yarn
       - yarn --version
-      - yarn
+      - yarn build
       - echo build completed
   post_build:
     commands:
